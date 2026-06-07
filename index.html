@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Personal Link Saver</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        h1 { margin-top: 0; color: #111; font-size: 24px; }
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        input, select {
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 120px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #0052a3; }
+        .search-box {
+            width: 100%;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+            background-color: #fafafa;
+        }
+        .link-list { list-style: none; padding: 0; margin: 0; }
+        .link-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: #fdfdfd;
+            border: 1px solid #eaeaea;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: transform 0.15s;
+        }
+        .link-item:hover { transform: translateY(-1px); border-color: #d0d0d0; }
+        .link-details a {
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .link-details a:hover { text-decoration: underline; }
+        .tag {
+            font-size: 11px;
+            background: #e1f0ff;
+            color: #0066cc;
+            padding: 3px 8px;
+            border-radius: 12px;
+            margin-left: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .btn-delete {
+            background-color: transparent;
+            color: #ff3b30;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        .btn-delete:hover { background-color: #ffe5e5; }
+        .empty-state { text-align: center; color: #888; padding: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Link Saver Notepad</h1>
+    
+    <!-- Add Link Form -->
+    <div class="form-group">
+        <input type="text" id="linkTitle" placeholder="Link Title (e.g., Google)">
+        <input type="text" id="linkUrl" placeholder="URL (https://...)">
+        <select id="linkCategory">
+            <option value="General">General</option>
+            <option value="Work">Work</option>
+            <option value="Learning">Learning</option>
+            <option value="Entertainment">Entertainment</option>
+        </select>
+        <button onclick="addLink()">Save Link</button>
+    </div>
+
+    <!-- Search / Filter -->
+    <input type="text" id="searchBar" class="search-box" placeholder="Search saved links..." oninput="displayLinks()">
+
+    <!-- Links Output -->
+    <ul id="linkList" class="link-list"></ul>
+</div>
+
+<script>
+    // Load links from LocalStorage or initialize empty array
+    let links = JSON.parse(localStorage.getItem('saved_links')) || [];
+
+    function addLink() {
+        const titleInput = document.getElementById('linkTitle');
+        const urlInput = document.getElementById('linkUrl');
+        const categoryInput = document.getElementById('linkCategory');
+
+        let title = titleInput.value.trim();
+        let url = urlInput.value.trim();
+        let category = categoryInput.value;
+
+        if (!title || !url) {
+            alert('Please fill in both the Title and URL fields.');
+            return;
+        }
+
+        // Auto-fix missing http protocol
+        if (!/^https?:\/\//i.test(url)) {
+            url = 'https://' + url;
+        }
+
+        const newLink = { id: Date.now(), title, url, category };
+        links.push(newLink);
+        saveToStorage();
+        displayLinks();
+
+        // Clear Form
+        titleInput.value = '';
+        urlInput.value = '';
+    }
+
+    function deleteLink(id) {
+        links = links.filter(link => link.id !== id);
+        saveToStorage();
+        displayLinks();
+    }
+
+    function saveToStorage() {
+        localStorage.setItem('saved_links', JSON.stringify(links));
+    }
+
+    function displayLinks() {
+        const list = document.getElementById('linkList');
+        const searchTerm = document.getElementById('searchBar').value.toLowerCase();
+        list.innerHTML = '';
+
+        const filteredLinks = links.filter(link => 
+            link.title.toLowerCase().includes(searchTerm) || 
+            link.category.toLowerCase().includes(searchTerm)
+        );
+
+        if (filteredLinks.length === 0) {
+            list.innerHTML = '<li class="empty-state">No links found. Add some above!</li>';
+            return;
+        }
+
+        filteredLinks.forEach(link => {
+            const li = document.createElement('li');
+            li.className = 'link-item';
+            li.innerHTML = `
+                <div class="link-details">
+                    <a href="${link.url}" target="_blank">${link.title}</a>
+                    <span class="tag">${link.category}</span>
+                </div>
+                <button class="btn-delete" onclick="deleteLink(${link.id})">Delete</button>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    // Initial render on load
+    displayLinks();
+</script>
+
+</body>
+</html>
